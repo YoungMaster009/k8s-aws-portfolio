@@ -91,13 +91,12 @@ data "aws_iam_policy_document" "trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Accept both sub formats for now, then trim after checking CloudTrail
-    # (same approach as Project 1). Only the main branch can push.
+    # Exact match on immutable owner and repo IDs, main branch only
+    # (format confirmed in CloudTrail, us-west-1)
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:YoungMaster009/k8s-aws-portfolio:ref:refs/heads/main",
         "repo:YoungMaster009@${var.owner_id}/k8s-aws-portfolio@${var.repo_id}:ref:refs/heads/main",
       ]
     }
