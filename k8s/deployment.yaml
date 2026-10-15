@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-app
+  labels:
+    app: portfolio-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: portfolio-app        # must match the pod labels below
+  template:
+    metadata:
+      labels:
+        app: portfolio-app
+    spec:
+      containers:
+        - name: app
+          image: k8s-aws-portfolio:v1
+          imagePullPolicy: IfNotPresent   # use the image kind loaded; never pull
+          ports:
+            - containerPort: 8080
+          readinessProbe:                 # gate: no traffic until /health answers
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:                  # restart the container if /health stops answering
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
