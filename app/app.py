@@ -3,11 +3,12 @@ import socket
 from flask import Flask, jsonify
 
 app = Flask(__name__)
-VERSION = os.environ.get("APP_VERSION", "dev")
+VERSION = os.environ.get("APP_VERSION", "dev") 
+GREETING = os.environ.get("GREETING", "Hello")
 
 @app.route("/")
 def home():
-    return f"Hello from k8s-aws-portfolio! Version: {VERSION}\n"
+    return f"{GREETING} from k8s-aws-portfolio! Version: {VERSION}\n"
 
 @app.route("/health")
 def health():
