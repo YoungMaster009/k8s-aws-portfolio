@@ -6,3 +6,11 @@ images:
   - name: k8s-aws-portfolio
     newName: 590183753633.dkr.ecr.us-west-1.amazonaws.com/k8s-aws-portfolio
     newTag: e3f481ee0add704851a69b6bcff623e8937517b9
+patches:
+  - target:
+      kind: Service
+      name: portfolio-app
+    patch: |-
+      - op: add
+        path: /spec/type
+        value: LoadBalancer
