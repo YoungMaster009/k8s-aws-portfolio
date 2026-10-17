@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../k8s
+images:
+  - name: k8s-aws-portfolio
+    newName: 590183753633.dkr.ecr.us-west-1.amazonaws.com/k8s-aws-portfolio
+    newTag: e3f481ee0add704851a69b6bcff623e8937517b9
