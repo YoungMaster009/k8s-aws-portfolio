@@ -225,3 +225,4 @@ __marimo__/
 *.tfstate
 *.tfstate.*
 *.tfplan
+tfplan
