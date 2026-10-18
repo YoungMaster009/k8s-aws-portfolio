@@ -15,6 +15,8 @@ env:
   AWS_REGION: us-west-1
   ROLE_ARN: arn:aws:iam::590183753633:role/github-actions-eks-deploy
   CLUSTER: k8s-portfolio
+  APP_DOMAIN: live.doiwannaknowthediaryofjane.com
+  ZONE_ID: Z08096871UOK0P6321WHS
   ECR_REPO: k8s-aws-portfolio
 
 jobs:
@@ -65,3 +67,12 @@ jobs:
           done
           echo "App URL: http://$HOST (DNS can take 1-3 minutes)"
           echo "### App URL: http://$HOST" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Point the live domain at the load balancer
+        run: |
+          HOST=$(kubectl get svc portfolio-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          cat > change.json <<EOF
+          {"Changes":[{"Action":"UPSERT","ResourceRecordSet":{"Name":"$APP_DOMAIN","Type":"CNAME","TTL":60,"ResourceRecords":[{"Value":"$HOST"}]}}]}
+          EOF
+          aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch file://change.json
+          echo "### Live at https://$APP_DOMAIN" >> "$GITHUB_STEP_SUMMARY"

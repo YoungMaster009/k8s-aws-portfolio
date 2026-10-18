@@ -17,6 +17,8 @@ env:
   AWS_REGION: us-west-1
   ROLE_ARN: arn:aws:iam::590183753633:role/github-actions-eks-deploy
   CLUSTER: k8s-portfolio
+  APP_DOMAIN: live.doiwannaknowthediaryofjane.com
+  ZONE_ID: Z08096871UOK0P6321WHS
 
 jobs:
   destroy:
@@ -37,6 +39,17 @@ jobs:
         with:
           terraform_version: 1.16.3
           terraform_wrapper: false
+
+      - name: Remove the live DNS record
+        run: |
+          RECORD=$(aws route53 list-resource-record-sets --hosted-zone-id "$ZONE_ID" \
+            --query "ResourceRecordSets[?Name=='${APP_DOMAIN}.' && Type=='CNAME'] | [0]" --output json)
+          if [ "$RECORD" = "null" ]; then
+            echo "No live record to remove."
+          else
+            echo "{\"Changes\":[{\"Action\":\"DELETE\",\"ResourceRecordSet\":$RECORD}]}" > change.json
+            aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch file://change.json
+          fi
 
       - name: Delete the LoadBalancer Service first (Kubernetes owns the ELB)
         run: |

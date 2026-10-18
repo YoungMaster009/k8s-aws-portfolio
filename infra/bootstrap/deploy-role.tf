@@ -110,6 +110,27 @@ resource "aws_iam_role_policy" "eks_deploy" {
         Condition = { StringLike = { "s3:prefix" = "k8s-aws-portfolio/eks/*" } }
       },
       {
+        Sid      = "UpdateOnlyTheLiveRecord"
+        Effect   = "Allow"
+        Action   = "route53:ChangeResourceRecordSets"
+        Resource = "arn:aws:route53:::hostedzone/${data.aws_route53_zone.main.zone_id}"
+        Condition = {
+          "ForAllValues:StringEquals" = {
+            "route53:ChangeResourceRecordSetsNormalizedRecordNames" = [local.app_domain]
+            "route53:ChangeResourceRecordSetsRecordTypes"           = ["CNAME"]
+          }
+        }
+      },
+      {
+        Sid    = "ReadTheZone"
+        Effect = "Allow"
+        Action = ["route53:ListResourceRecordSets", "route53:GetChange"]
+        Resource = [
+          "arn:aws:route53:::hostedzone/${data.aws_route53_zone.main.zone_id}",
+          "arn:aws:route53:::change/*",
+        ]
+      },
+      {
         Sid      = "FindNewestImage"
         Effect   = "Allow"
         Action   = "ecr:DescribeImages"
