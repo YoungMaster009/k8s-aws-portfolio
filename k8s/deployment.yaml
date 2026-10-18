@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: k8s-aws-portfolio:v2
+          image: k8s-aws-portfolio:v3
           imagePullPolicy: IfNotPresent   # use the image kind loaded; never pull
           env:
             - name: GREETING
@@ -24,6 +24,18 @@ spec:
                 configMapKeyRef:
                   name: portfolio-config
                   key: GREETING
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           ports:
             - containerPort: 8080
           readinessProbe:                 # gate: no traffic until /health answers
