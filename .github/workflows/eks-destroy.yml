@@ -1,0 +1,57 @@
+name: eks-destroy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 6 * * *" # nightly safety net, 1:41 AM Central
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: eks-k8s-portfolio
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-1
+  ROLE_ARN: arn:aws:iam::590183753633:role/github-actions-eks-deploy
+  CLUSTER: k8s-portfolio
+
+jobs:
+  destroy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials (OIDC, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.3
+          terraform_wrapper: false
+
+      - name: Delete the LoadBalancer Service first (Kubernetes owns the ELB)
+        run: |
+          if OUT=$(aws eks describe-cluster --name "$CLUSTER" --region "$AWS_REGION" 2>&1); then
+            aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER"
+            kubectl delete svc portfolio-app --ignore-not-found --timeout=5m
+          elif echo "$OUT" | grep -q ResourceNotFoundException; then
+            echo "No cluster running; nothing to clean up in Kubernetes."
+          else
+            echo "$OUT"
+            exit 1
+          fi
+
+      - name: Terraform destroy
+        working-directory: infra/eks
+        run: |
+          terraform init -input=false
+          terraform destroy -input=false -auto-approve

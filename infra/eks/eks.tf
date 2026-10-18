@@ -66,3 +66,18 @@ resource "aws_eks_node_group" "main" {
 output "kubeconfig_command" {
   value = "aws eks update-kubeconfig --region us-west-1 --name ${aws_eks_cluster.main.name}"
 }
+
+resource "aws_eks_access_entry" "github" {
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = "arn:aws:iam::590183753633:role/github-actions-eks-deploy"
+}
+
+resource "aws_eks_access_policy_association" "github" {
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = aws_eks_access_entry.github.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
+  access_scope {
+    type       = "namespace"
+    namespaces = ["default"]
+  }
+}

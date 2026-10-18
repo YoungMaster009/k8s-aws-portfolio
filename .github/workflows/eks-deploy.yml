@@ -1,0 +1,67 @@
+name: eks-deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: eks-k8s-portfolio
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-1
+  ROLE_ARN: arn:aws:iam::590183753633:role/github-actions-eks-deploy
+  CLUSTER: k8s-portfolio
+  ECR_REPO: k8s-aws-portfolio
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials (OIDC, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.3
+          terraform_wrapper: false
+
+      - name: Terraform init and apply
+        working-directory: infra/eks
+        run: |
+          terraform init -input=false
+          terraform apply -input=false -auto-approve
+
+      - name: Pick the newest image in ECR
+        run: |
+          TAG=$(aws ecr describe-images --repository-name "$ECR_REPO" \
+            --query "sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]" --output text)
+          echo "Deploying image tag $TAG"
+          sed -i "s/newTag: .*/newTag: $TAG/" overlays/eks/kustomization.yaml
+
+      - name: Deploy the app
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER"
+          kubectl apply -k overlays/eks
+          kubectl rollout status deployment/portfolio-app --timeout=5m
+
+      - name: Publish the public URL
+        run: |
+          for i in $(seq 1 30); do
+            HOST=$(kubectl get svc portfolio-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            [ -n "$HOST" ] && break
+            sleep 10
+          done
+          echo "App URL: http://$HOST (DNS can take 1-3 minutes)"
+          echo "### App URL: http://$HOST" >> "$GITHUB_STEP_SUMMARY"
