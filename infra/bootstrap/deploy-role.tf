@@ -38,9 +38,9 @@ resource "aws_iam_role_policy" "eks_deploy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "NetworkInThisRegionOnly"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "NetworkInThisRegionOnly"
+        Effect = "Allow"
+        Action = [
           "ec2:Describe*", "ec2:CreateTags", "ec2:DeleteTags",
           "ec2:CreateVpc", "ec2:DeleteVpc", "ec2:ModifyVpcAttribute",
           "ec2:CreateSubnet", "ec2:DeleteSubnet", "ec2:ModifySubnetAttribute",
@@ -74,6 +74,14 @@ resource "aws_iam_role_policy" "eks_deploy" {
         ]
         Resource = "arn:aws:iam::${local.account}:role/k8s-portfolio-*"
       },
+
+      {
+        Sid      = "CheckEksServiceLinkedRoles"
+        Effect   = "Allow"
+        Action   = "iam:GetRole"
+        Resource = "arn:aws:iam::${local.account}:role/aws-service-role/eks*.amazonaws.com/*"
+      },
+
       {
         Sid       = "AttachOnlyEksPolicies"
         Effect    = "Allow"
