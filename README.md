@@ -5,7 +5,7 @@
 🔗 **Live demo:** https://live.doiwannaknowthediaryofjane.com
 *(The cluster is created on demand to keep costs near zero, so the link only answers while a demo is running. See [Cost controls](#cost-controls).)*
 
-![Live status page with requests spread across three pods in two Availability Zones](docs/images/load-balancing.png)
+![Live status page served over HTTPS, showing which pod answered each request](docs/images/live-https.png)
 
 ---
 
@@ -55,8 +55,6 @@ flowchart LR
 
 ## The live page
 
-![The HTTPS page on a phone, padlock showing, bars filling as requests arrive](docs/images/live-https.png)
-
 The page polls `/api/info` every 1.5 seconds. Each request goes through the load balancer and the Kubernetes Service, so a different pod may answer each time.
 
 | Field | Where it comes from |
@@ -74,7 +72,7 @@ The node's IP shows the Availability Zone: 10.34.16–31 is us-west-1a, 10.34.32
 - **Self-healing:** `kubectl delete pod <name>`. That pod's bar stops, a new pod name appears within seconds, and the page never goes down.
 - **Rolling update:** push a change and re-run `eks-deploy`. A NEW VERSION label appears mid-stream while old and new pods answer side by side (`maxSurge 1`, `maxUnavailable 0`).
 
-![A rolling update in progress: old and new versions answering side by side](docs/images/rolling-update.png)
+![A rolling update on kind: v1 and v2 pods answering side by side in a curl loop](docs/images/rolling-update.png)
 
 `curl` gets a one-line text answer instead of the page (the app checks the `Accept` header), which is handy for loops in a terminal.
 
